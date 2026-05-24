@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Без зависимостей</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Без зависимостей">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a0a0f">
+<link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjAgMTIwIj48cmVjdCB3aWR0aD0iMTIwIiBoZWlnaHQ9IjEyMCIgcng9IjI2IiBmaWxsPSIjMGEwYTBmIi8+PHRleHQgeD0iNTAlIiB5PSI1OCUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJIZWx2ZXRpY2EgTmV1ZSxzYW5zLXNlcmlmIiBmb250LXNpemU9IjUyIiBmb250LXdlaWdodD0iODAwIiBmaWxsPSIjYThlNjNkIj5CWjwvdGV4dD48L3N2Zz4=">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html, body { height:100%; overflow:hidden; }
+
+:root {
+  --accent: #a8e63d;
+  --teal: #2dd4bf;
+  --radius: 18px;
+  --pt: max(50px, env(safe-area-inset-top));
+  --pb: max(24px, env(safe-area-inset-bottom));
+  --ph: 16px; --gap: 9px;
+  --glass: rgba(255,255,255,0.07);
+  --glass-border: rgba(255,255,255,0.12);
+  --text: #f0f0eb;
+  --text-muted: rgba(240,240,235,0.5);
+  --surface: rgba(255,255,255,0.08);
+  --surface2: rgba(255,255,255,0.05);
+  --card-bg: rgba(0,0,0,0.35);
+}
+
+body {
+  font-family: 'Manrope', sans-serif;
+  color: var(--text);
+  display: flex;
+  justify-content: center;
+  position: relative;
+}
+
+/* ── Backgrounds ── */
+#bg-canvas { position:fixed; inset:0; z-index:0; }
+
+.bg-gradient {
+  position: fixed; inset: 0; z-index: 0;
+  transition: opacity 0.6s ease;
+}
+.bg-gradient.bg-cosmos {
+  background: radial-gradient(ellipse at 20% 20%, #1a0533 0%, #0a0a1a 50%, #000510 100%);
+}
+.bg-gradient.bg-aurora {
+  background: linear-gradient(135deg, #0d1b2a 0%, #1b4332 40%, #0d2d4a 70%, #1a0533 100%);
+}
+.bg-gradient.bg-sunset {
+  background: linear-gradient(160deg, #1a0010 0%, #2d0a2e 35%, #1a1a0a 70%, #0a1a2d 100%);
+}
+.bg-gradient.bg-minimal {
+  background: linear-gradient(180deg, #111118 0%, #1a1a24 50%, #0f0f18 100%);
+}
+
+/* ── App shell ── */
+.app {
+  position: relative; z-index: 1;
+  width: 100%; max-width: 390px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Swipe container ── */
+.counters-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+.counters-track {
+  display: flex;
+  height: 100%;
+  transition: transform 0.35s cubic-bezier(0.32,0.72,0,1);
+  will-change: transform;
+}
+.counter-screen {
+  min-width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: var(--pt) var(--ph) var(--pb);
+  gap: var(--gap);
+}
+
+/* ── Dot indicators ── */
+.dots {
+  position: absolute;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  z-index: 10;
+  pointer-events: none;
+}
+.dot-ind {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.3);
+  transition: all 0.3s;
+}
+.dot-ind.active {
+  background: var(--accent);
+  width: 16px;
+  border-radius: 99px;
+}
+
+/* ── Header ── */
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.header-left {}
+.tracker-label {
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--text-muted);
+  display: flex; align-items: center; gap: 5px;
+  margin-bottom: 1px;
+}
+.pulse-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.7)} }
+.hero-word {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 44px; line-height: 0.95;
+  color: var(--accent); letter-spacing: 0.02em;
+}
+.since { font-size: 11px; color: var(--teal); font-weight: 500; margin-top: 2px; }
+.btn-row { display: flex; gap: 7px; align-items: flex-start; margin-top: 2px; }
+.icon-btn {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text);
+  backdrop-filter: blur(10px);
+  transition: opacity 0.15s, background 0.2s;
+}
+.icon-btn:active { opacity: 0.6; }
+.icon-btn.active { background: var(--accent); color: #1a1a18; border-color: var(--accent); }
+
+/* ── Motivation ── */
+.motivation-card {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(16px);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  display: flex; align-items: center; gap: 9px;
+  flex-shrink: 0;
+}
+.motivation-icon { color: var(--accent); font-size: 13px; flex-shrink: 0; }
+.motivation-text { font-size: 12px; font-weight: 500; color: var(--text); line-height: 1.35; font-style: italic; }
+
+/* ── Days card ── */
+.days-card {
+  background: var(--card-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(20px);
+  border-radius: var(--radius);
+  padding: 18px 20px 14px;
+  display: flex; align-items: flex-end; justify-content: space-between;
+  flex-shrink: 0; cursor: pointer;
+  transition: transform 0.12s;
+}
+.days-card:active { transform: scale(0.985); }
+.days-number {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 80px; line-height: 1; color: var(--accent);
+}
+.days-label {
+  font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--text-muted); margin-bottom: 12px; font-weight: 600;
+}
+.time-mini { text-align: right; }
+.time-row { display: flex; gap: 6px; justify-content: flex-end; align-items: baseline; }
+.time-unit { text-align: center; }
+.time-val { font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: var(--text); line-height: 1; }
+.time-lbl { font-size: 7px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); font-weight: 600; }
+.time-sep { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: var(--text-muted); margin-bottom: 10px; opacity: 0.4; }
+.tap-hint { font-size: 8px; color: var(--text-muted); text-align: right; margin-top: 6px; opacity: 0.5; }
+
+/* ── Body panel ── */
+.body-panel {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(16px);
+  border-radius: var(--radius);
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 0.4s ease, padding 0.3s ease;
+  padding: 0 16px; flex-shrink: 0;
+}
+.body-panel.open { max-height: 280px; padding: 14px 16px; overflow-y: auto; }
+.body-panel-title { font-size: 9px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; }
+.body-item { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
+.body-item:last-child { margin-bottom: 0; }
+.body-item-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+.body-item-text { font-size: 12px; line-height: 1.35; color: var(--text); }
+.body-item-text b { color: var(--accent); font-weight: 700; }
+.body-item.future .body-item-text { color: var(--text-muted); }
+.body-item.future .body-item-icon { filter: grayscale(1); opacity: 0.4; }
+
+/* ── Goal card ── */
+.goal-card {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(16px);
+  border-radius: var(--radius); padding: 14px 16px; flex-shrink: 0;
+}
+.goal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px; }
+.goal-title { font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-muted); font-weight: 600; }
+.goal-pct { font-size: 12px; font-weight: 700; color: var(--accent); }
+.goal-next { font-size: 19px; font-weight: 700; color: var(--text); margin-bottom: 10px; letter-spacing: -0.02em; }
+.goal-next span { color: var(--text-muted); font-weight: 400; font-size: 12px; }
+.progress-track { height: 4px; background: rgba(255,255,255,0.1); border-radius: 99px; overflow: hidden; }
+.progress-fill { height: 100%; background: var(--accent); border-radius: 99px; transition: width 1s ease; }
+.goal-milestones { display: flex; gap: 5px; margin-top: 10px; }
+.milestone-dot { flex: 1; height: 3px; border-radius: 99px; background: rgba(255,255,255,0.1); transition: background 0.3s; }
+.milestone-dot.done { background: var(--accent); }
+.milestone-dot.current { background: var(--teal); }
+
+/* ── Money card ── */
+.money-card {
+  background: var(--card-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(20px);
+  border-radius: var(--radius); padding: 14px 16px;
+  display: flex; align-items: center; gap: 14px; flex-shrink: 0;
+}
+.money-icon { font-size: 24px; flex-shrink: 0; }
+.money-body { flex: 1; }
+.money-label { font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-muted); font-weight: 600; margin-bottom: 1px; }
+.money-amount { font-family: 'Bebas Neue', sans-serif; font-size: 32px; color: var(--teal); line-height: 1; }
+.money-sub { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+.money-sub b { color: var(--teal); font-weight: 600; }
+
+/* ── Overlay base ── */
+.overlay {
+  position: fixed; inset: 0; z-index: 200;
+  display: flex; align-items: flex-end;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.overlay.open { opacity: 1; pointer-events: all; }
+.overlay-backdrop {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(6px);
+}
+.sheet {
+  position: relative; width: 100%; max-width: 390px; margin: 0 auto;
+  background: #1a1a24;
+  border-radius: 24px 24px 0 0;
+  padding: 20px 20px max(28px, env(safe-area-inset-bottom));
+  transform: translateY(100%);
+  transition: transform 0.35s cubic-bezier(0.32,0.72,0,1);
+  z-index: 1; max-height: 90vh; overflow-y: auto;
+}
+.overlay.open .sheet { transform: translateY(0); }
+.sheet-handle { width: 36px; height: 4px; border-radius: 99px; background: rgba(255,255,255,0.15); margin: 0 auto 20px; }
+.sheet-title { font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 16px; }
+
+/* Sheet inputs */
+.field-label { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+.field-label span { color: var(--text-muted); font-weight: 400; font-size: 12px; }
+.input-row {
+  background: rgba(0,0,0,0.3);
+  border-radius: 14px; padding: 14px 16px;
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 14px; border: 1px solid rgba(255,255,255,0.08);
+}
+.input-row input {
+  background: none; border: none; outline: none;
+  color: var(--teal); font-family: 'Manrope', sans-serif;
+  font-size: 16px; font-weight: 600; width: 100%;
+}
+.input-row input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.5); cursor: pointer; }
+.input-row .input-suffix { color: var(--text-muted); font-size: 13px; white-space: nowrap; }
+.input-row input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+/* Buttons */
+.btn-primary {
+  width: 100%; padding: 16px; border-radius: 14px; border: none;
+  background: var(--accent); color: #1a1a18;
+  font-family: 'Manrope', sans-serif; font-size: 15px; font-weight: 700;
+  cursor: pointer; margin-bottom: 10px; transition: opacity 0.15s;
+}
+.btn-primary:active { opacity: 0.8; }
+.btn-danger {
+  width: 100%; padding: 14px; border-radius: 14px; border: none;
+  background: rgba(229,57,53,0.15); color: #ef5350;
+  font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 600;
+  cursor: pointer; margin-bottom: 10px; transition: opacity 0.15s;
+  border: 1px solid rgba(229,57,53,0.3);
+}
+.btn-danger:active { opacity: 0.7; }
+.btn-cancel {
+  width: 100%; padding: 14px; border-radius: 14px; border: none;
+  background: rgba(255,255,255,0.07); color: var(--text);
+  font-family: 'Manrope', sans-serif; font-size: 15px; font-weight: 600;
+  cursor: pointer; transition: opacity 0.15s;
+}
+.btn-cancel:active { opacity: 0.7; }
+.divider { height: 1px; background: rgba(255,255,255,0.08); margin: 16px 0; }
+
+/* Add tracker sheet - type selector */
+.type-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.type-option {
+  background: rgba(0,0,0,0.3); border: 1.5px solid rgba(255,255,255,0.08);
+  border-radius: 14px; padding: 14px 12px;
+  cursor: pointer; text-align: center; transition: all 0.15s;
+}
+.type-option.selected { border-color: var(--accent); background: rgba(168,230,61,0.1); }
+.type-option-icon { font-size: 24px; margin-bottom: 6px; }
+.type-option-label { font-size: 13px; font-weight: 600; color: var(--text); }
+.type-custom { grid-column: 1 / -1; }
+
+/* Background selector */
+.bg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.bg-option {
+  border-radius: 14px; height: 80px; cursor: pointer;
+  border: 2px solid transparent; transition: all 0.2s;
+  display: flex; align-items: flex-end; padding: 8px 10px;
+  position: relative; overflow: hidden;
+}
+.bg-option.selected { border-color: var(--accent); }
+.bg-option-label { font-size: 11px; font-weight: 600; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.5); position: relative; z-index: 1; }
+.bg-cosmos-prev { background: radial-gradient(ellipse at 20% 20%, #1a0533, #0a0a1a, #000510); }
+.bg-aurora-prev { background: linear-gradient(135deg, #0d1b2a, #1b4332, #0d2d4a, #1a0533); }
+.bg-sunset-prev { background: linear-gradient(160deg, #1a0010, #2d0a2e, #1a1a0a, #0a1a2d); }
+.bg-minimal-prev { background: linear-gradient(180deg, #111118, #1a1a24, #0f0f18); }
+
+/* Confetti & flash */
+#confetti-canvas { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 999; }
+.flash { position: fixed; inset: 0; background: var(--accent); opacity: 0; pointer-events: none; z-index: 998; animation: flashAnim 0.5s ease forwards; }
+@keyframes flashAnim { 0%{opacity:0.35} 100%{opacity:0} }
+
+/* Animations */
+.counter-screen > * { opacity: 0; transform: translateY(12px); animation: fadeUp 0.4s ease forwards; }
+.counter-screen > *:nth-child(1){animation-delay:0.04s}
+.counter-screen > *:nth-child(2){animation-delay:0.10s}
+.counter-screen > *:nth-child(3){animation-delay:0.16s}
+.counter-screen > *:nth-child(4){animation-delay:0.16s}
+.counter-screen > *:nth-child(5){animation-delay:0.22s}
+.counter-screen > *:nth-child(6){animation-delay:0.28s}
+@keyframes fadeUp { to { opacity:1; transform:translateY(0); } }
+</style>
+</head>
+<body>
+
+<canvas id="confetti-canvas"></canvas>
+<div class="bg-gradient bg-cosmos" id="bg-el"></div>
+<canvas id="bg-canvas"></canvas>
+
+<div class="app">
+  <div class="counters-wrap">
+    <div class="counters-track" id="counters-track"></div>
+    <div class="dots" id="dots"></div>
+  </div>
+</div>
+
+<!-- Settings overlay -->
+<div class="overlay" id="settings-overlay">
+  <div class="overlay-backdrop" onclick="closeSettings()"></div>
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Настройки счётчика</div>
+
+    <div class="field-label">Дата начала</div>
+    <div class="input-row">
+      <input type="date" id="s-date">
+    </div>
+
+    <div class="field-label">Расходы <span>— сколько тратил в день</span></div>
+    <div class="input-row">
+      <input type="number" id="s-spend" placeholder="750" min="0" max="99999">
+      <span class="input-suffix">₽ / день</span>
+    </div>
+
+    <div class="divider"></div>
+    <div class="sheet-title">Фон приложения</div>
+    <div class="bg-grid">
+      <div class="bg-option bg-cosmos-prev" data-bg="cosmos" onclick="selectBg(this)">
+        <span class="bg-option-label">Космос</span>
+      </div>
+      <div class="bg-option bg-aurora-prev" data-bg="aurora" onclick="selectBg(this)">
+        <span class="bg-option-label">Аврора</span>
+      </div>
+      <div class="bg-option bg-sunset-prev" data-bg="sunset" onclick="selectBg(this)">
+        <span class="bg-option-label">Закат</span>
+      </div>
+      <div class="bg-option bg-minimal-prev" data-bg="minimal" onclick="selectBg(this)">
+        <span class="bg-option-label">Минимал</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <button class="btn-primary" onclick="applySettings()">Сохранить</button>
+    <button class="btn-danger" onclick="confirmReset()">🔄 Сбросить счётчик</button>
+    <button class="btn-cancel" onclick="closeSettings()">Отмена</button>
+  </div>
+</div>
+
+<!-- Add tracker overlay -->
+<div class="overlay" id="add-overlay">
+  <div class="overlay-backdrop" onclick="closeAdd()"></div>
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Новый счётчик</div>
+
+    <div class="field-label">Тип зависимости</div>
+    <div class="type-grid" id="type-grid">
+      <div class="type-option selected" data-type="alcohol" onclick="selectType(this)">
+        <div class="type-option-icon">🍺</div>
+        <div class="type-option-label">Алкоголь</div>
+      </div>
+      <div class="type-option" data-type="smoking" onclick="selectType(this)">
+        <div class="type-option-icon">🚬</div>
+        <div class="type-option-label">Сигареты</div>
+      </div>
+      <div class="type-option type-custom" data-type="custom" onclick="selectType(this)">
+        <div class="type-option-icon">✏️</div>
+        <div class="type-option-label">Своё название</div>
+      </div>
+    </div>
+
+    <div id="custom-name-wrap" style="display:none">
+      <div class="field-label">Название</div>
+      <div class="input-row">
+        <input type="text" id="a-name" placeholder="например: кофе, сахар...">
+      </div>
+    </div>
+
+    <div class="field-label">Дата начала</div>
+    <div class="input-row">
+      <input type="date" id="a-date">
+    </div>
+
+    <div class="field-label">Расходы <span>— сколько тратил в день</span></div>
+    <div class="input-row">
+      <input type="number" id="a-spend" placeholder="0" min="0" max="99999">
+      <span class="input-suffix">₽ / день</span>
+    </div>
+
+    <button class="btn-primary" onclick="addTracker()">Добавить счётчик</button>
+    <button class="btn-cancel" onclick="closeAdd()">Отмена</button>
+  </div>
+</div>
+
+<script>
+// ─── Data ───────────────────────────────────────────
+const MILESTONES = [7, 14, 30, 90, 180, 365];
+const TRACKER_TYPES = {
+  alcohol: { label: 'БЕЗ АЛКОГОЛЯ.', icon: '🍺', spend: 750, bodyChanges: 'alcohol' },
+  smoking: { label: 'БЕЗ СИГАРЕТ.', icon: '🚬', spend: 300, bodyChanges: 'smoking' },
+  custom:  { label: 'БЕЗ ЗАВИСИМОСТИ.', icon: '✦', spend: 0, bodyChanges: 'general' },
+};
+const BODY_CHANGES = {
+  alcohol: [
+    { days:0,  icon:'🫀', text:'<b>20 минут</b> — пульс и давление нормализуются.' },
+    { days:0,  icon:'🩸', text:'<b>12 часов</b> — CO в крови пришёл в норму.' },
+    { days:1,  icon:'😴', text:'<b>1–3 дня</b> — симптомы отмены достигают пика, потом спадают.' },
+    { days:4,  icon:'🧠', text:'<b>4–7 дней</b> — нейроны мозга начинают восстанавливаться.' },
+    { days:7,  icon:'💧', text:'<b>Неделя</b> — кожа увлажняется и выглядит здоровее.' },
+    { days:14, icon:'😌', text:'<b>2 недели</b> — тревожность снижается, сон улучшается.' },
+    { days:30, icon:'🫁', text:'<b>Месяц</b> — печень активно восстанавливается.' },
+    { days:90, icon:'💪', text:'<b>3 месяца</b> — когнитивные функции улучшились.' },
+    { days:180,icon:'❤️', text:'<b>6 месяцев</b> — риск сердечно-сосудистых заболеваний снизился.' },
+    { days:365,icon:'🌟', text:'<b>Год</b> — риск рака пищевода снизился вдвое!' },
+  ],
+  smoking: [
+    { days:0,  icon:'🫁', text:'<b>20 минут</b> — давление и пульс нормализуются.' },
+    { days:0,  icon:'🩸', text:'<b>8 часов</b> — уровень никотина снизился на 90%.' },
+    { days:1,  icon:'💨', text:'<b>1 день</b> — риск сердечного приступа снижается.' },
+    { days:2,  icon:'👃', text:'<b>2 дня</b> — обоняние и вкус начинают восстанавливаться.' },
+    { days:14, icon:'🏃', text:'<b>2 недели</b> — кровообращение улучшается, ходьба легче.' },
+    { days:30, icon:'😮‍💨', text:'<b>Месяц</b> — кашель и одышка уменьшаются.' },
+    { days:90, icon:'🛡️', text:'<b>3 месяца</b> — функция лёгких улучшилась на 10%.' },
+    { days:365,icon:'❤️', text:'<b>Год</b> — риск болезней сердца снизился вдвое.' },
+  ],
+  general: [
+    { days:1,  icon:'✨', text:'<b>1 день</b> — первый шаг сделан. Ты уже победил.' },
+    { days:7,  icon:'🧠', text:'<b>Неделя</b> — мозг перестраивается под новый режим.' },
+    { days:14, icon:'💪', text:'<b>2 недели</b> — привычка начинает ослабевать.' },
+    { days:30, icon:'🌱', text:'<b>Месяц</b> — формируется новый нейронный путь.' },
+    { days:90, icon:'🏆', text:'<b>3 месяца</b> — зависимость значительно ослабла.' },
+    { days:365,icon:'🌟', text:'<b>Год</b> — ты полностью свободен. Невероятно.' },
+  ],
+};
+const QUOTES = [
+  'Каждый день трезвости — это победа над собой.',
+  'Твой мозг восстанавливается прямо сейчас.',
+  'Сила воли — мышца. Ты её тренируешь каждый день.',
+  'Ты уже лучше, чем вчера. Это факт.',
+  'Трезвость — это не отказ от жизни, а её возвращение.',
+  'Каждый час без зависимости — подарок твоему телу.',
+  'Настоящая свобода начинается с этого решения.',
+  'Ты доказываешь себе, что можешь. И можешь.',
+  'Организм благодарит тебя прямо сейчас.',
+  'Один день за раз — и ты уже далеко.',
+  'Ясный разум — острее, чище, сильнее.',
+  'Это самое важное, что ты делаешь для себя.',
+  'Каждое утро — это подарок.',
+  'Ты сильнее своих желаний.',
+  'Сегодня снова твой день.',
+];
+
+// ─── State ───────────────────────────────────────────
+let trackers = JSON.parse(localStorage.getItem('trackers') || 'null') || [
+  { id: 1, type: 'alcohol', name: 'БЕЗ АЛКОГОЛЯ.', startDate: '2026-05-02', spend: 750 }
+];
+let currentBg = localStorage.getItem('currentBg') || 'cosmos';
+let currentIdx = 0;
+let editingId = null;
+let selectedType = 'alcohol';
+let selectedBgInSheet = currentBg;
+
+// ─── Background ───────────────────────────────────────
+const bgEl = document.getElementById('bg-el');
+const bgCanvas = document.getElementById('bg-canvas');
+const bgCtx = bgCanvas.getContext('2d');
+let bgParticles = [];
+let bgAnimRunning = false;
+
+function applyBg(name) {
+  bgEl.className = `bg-gradient bg-${name}`;
+  if (name === 'cosmos' || name === 'aurora') {
+    startParticles(name);
+  } else {
+    stopParticles();
+  }
+}
+
+function startParticles(type) {
+  bgCanvas.width = window.innerWidth;
+  bgCanvas.height = window.innerHeight;
+  bgParticles = [];
+  const count = type === 'cosmos' ? 80 : 40;
+  for (let i = 0; i < count; i++) {
+    bgParticles.push({
+      x: Math.random() * bgCanvas.width,
+      y: Math.random() * bgCanvas.height,
+      r: Math.random() * (type === 'cosmos' ? 1.5 : 2),
+      a: Math.random(),
+      speed: 0.003 + Math.random() * 0.005,
+      dx: (Math.random() - 0.5) * 0.2,
+      dy: (Math.random() - 0.5) * 0.2,
+      color: type === 'cosmos' ? '#ffffff' : (Math.random() > 0.5 ? '#a8e63d' : '#2dd4bf'),
+    });
+  }
+  if (!bgAnimRunning) { bgAnimRunning = true; animateBg(); }
+}
+
+function stopParticles() {
+  bgAnimRunning = false;
+  bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+}
+
+function animateBg() {
+  if (!bgAnimRunning) return;
+  bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+  bgParticles.forEach(p => {
+    p.a += p.speed; if (p.a > 1) p.a = 0;
+    p.x += p.dx; p.y += p.dy;
+    if (p.x < 0) p.x = bgCanvas.width; if (p.x > bgCanvas.width) p.x = 0;
+    if (p.y < 0) p.y = bgCanvas.height; if (p.y > bgCanvas.height) p.y = 0;
+    const opacity = Math.sin(p.a * Math.PI) * 0.8;
+    bgCtx.beginPath();
+    bgCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    bgCtx.fillStyle = p.color + Math.floor(opacity * 255).toString(16).padStart(2,'0');
+    bgCtx.fill();
+  });
+  requestAnimationFrame(animateBg);
+}
+
+window.addEventListener('resize', () => {
+  bgCanvas.width = window.innerWidth;
+  bgCanvas.height = window.innerHeight;
+});
+
+// ─── Render ───────────────────────────────────────────
+function fmt(n) { return n.toLocaleString('ru-RU'); }
+function pad(n) { return String(n).padStart(2,'0'); }
+function decl(n) {
+  const a = Math.abs(n);
+  if (a%10===1 && a%100!==11) return 'день';
+  if ([2,3,4].includes(a%10) && ![12,13,14].includes(a%100)) return 'дня';
+  return 'дней';
+}
+function getNext(d) { return MILESTONES.find(m=>m>d)||MILESTONES[MILESTONES.length-1]; }
+function getPrev(d) { const p=MILESTONES.filter(m=>m<=d); return p.length?p[p.length-1]:0; }
+function formatDate(str) {
+  const d = new Date(str+'T00:00:00');
+  const months=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+  return `с ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()} г.`;
+}
+
+function renderScreens() {
+  const track = document.getElementById('counters-track');
+  const dotsEl = document.getElementById('dots');
+  track.innerHTML = '';
+  dotsEl.innerHTML = '';
+
+  trackers.forEach((tr, i) => {
+    const screen = document.createElement('div');
+    screen.className = 'counter-screen';
+    screen.id = `screen-${tr.id}`;
+    const typeInfo = TRACKER_TYPES[tr.type] || TRACKER_TYPES.custom;
+    const dayIndex = Math.floor((Date.now() - new Date(tr.startDate+'T00:00:00')) / 86400000);
+    const quote = QUOTES[Math.abs(dayIndex) % QUOTES.length];
+
+    screen.innerHTML = `
+      <div class="header">
+        <div>
+          <div class="tracker-label"><span class="pulse-dot"></span>Счётчик трезвости</div>
+          <div class="hero-word">${tr.name}</div>
+          <div class="since" id="since-${tr.id}">${formatDate(tr.startDate)}</div>
+        </div>
+        <div class="btn-row">
+          <button class="icon-btn" onclick="openAdd()" title="Добавить зависимость">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+          </button>
+          <button class="icon-btn" id="sbtn-${tr.id}" onclick="openSettings(${tr.id})" title="Настройки">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="motivation-card">
+        <span class="motivation-icon">✦</span>
+        <span class="motivation-text">${quote}</span>
+      </div>
+      <div class="days-card" onclick="toggleBody(${tr.id})">
+        <div>
+          <div class="days-number" id="days-${tr.id}">0</div>
+          <div class="days-label">дней без зависимости</div>
+        </div>
+        <div class="time-mini">
+          <div class="time-row">
+            <div class="time-unit"><div class="time-val" id="h-${tr.id}">00</div><div class="time-lbl">ч</div></div>
+            <div class="time-sep">:</div>
+            <div class="time-unit"><div class="time-val" id="m-${tr.id}">00</div><div class="time-lbl">мин</div></div>
+            <div class="time-sep">:</div>
+            <div class="time-unit"><div class="time-val" id="s-${tr.id}">00</div><div class="time-lbl">сек</div></div>
+          </div>
+          <div class="tap-hint">нажми · узнай что изменилось</div>
+        </div>
+      </div>
+      <div class="body-panel" id="body-${tr.id}">
+        <div class="body-panel-title">Что изменилось в организме</div>
+        <div id="body-items-${tr.id}"></div>
+      </div>
+      <div class="goal-card">
+        <div class="goal-header">
+          <div class="goal-title">Ближайшая цель</div>
+          <div class="goal-pct" id="pct-${tr.id}">0%</div>
+        </div>
+        <div class="goal-next" id="gnext-${tr.id}">7 дней <span>— осталось 7 дней</span></div>
+        <div class="progress-track"><div class="progress-fill" id="pfill-${tr.id}" style="width:0%"></div></div>
+        <div class="goal-milestones" id="ms-${tr.id}"></div>
+      </div>
+      <div class="money-card">
+        <div class="money-icon">${typeInfo.icon}</div>
+        <div class="money-body">
+          <div class="money-label">Сэкономлено</div>
+          <div class="money-amount" id="saved-${tr.id}">0 ₽</div>
+          <div class="money-sub">в месяц <b id="mo-${tr.id}">${fmt(tr.spend*30)} ₽</b> · в год <b id="yr-${tr.id}">${fmt(tr.spend*365)} ₽</b></div>
+        </div>
+      </div>
+    `;
+    track.appendChild(screen);
+
+    const dot = document.createElement('div');
+    dot.className = 'dot-ind' + (i === currentIdx ? ' active' : '');
+    dotsEl.appendChild(dot);
+  });
+
+  updateTrack();
+  setupSwipe();
+}
+
+function updateTrack() {
+  document.getElementById('counters-track').style.transform = `translateX(${-currentIdx * 100}%)`;
+  document.querySelectorAll('.dot-ind').forEach((d,i) => d.classList.toggle('active', i===currentIdx));
+}
+
+// ─── Swipe ───────────────────────────────────────────
+function setupSwipe() {
+  const track = document.getElementById('counters-track');
+  let startX = 0, isDragging = false;
+  track.addEventListener('touchstart', e => { startX = e.touches[0].clientX; isDragging = true; }, {passive:true});
+  track.addEventListener('touchend', e => {
+    if (!isDragging) return; isDragging = false;
+    const dx = e.changedTouches[0].clientX - startX;
+    if (Math.abs(dx) > 50) {
+      if (dx < 0 && currentIdx < trackers.length-1) currentIdx++;
+      else if (dx > 0 && currentIdx > 0) currentIdx--;
+      updateTrack();
+    }
+  }, {passive:true});
+}
+
+// ─── Tick ───────────────────────────────────────────
+let lastDays = {};
+function tick() {
+  trackers.forEach(tr => {
+    const START = new Date(tr.startDate + 'T00:00:00');
+    const diff = Date.now() - START;
+    const ts = Math.max(0, Math.floor(diff/1000));
+    const days = Math.floor(ts/86400);
+    const h = Math.floor((ts%86400)/3600);
+    const m = Math.floor((ts%3600)/60);
+    const s = ts%60;
+
+    const dEl = document.getElementById(`days-${tr.id}`);
+    if (!dEl) return;
+    dEl.textContent = days;
+    document.getElementById(`h-${tr.id}`).textContent = pad(h);
+    document.getElementById(`m-${tr.id}`).textContent = pad(m);
+    document.getElementById(`s-${tr.id}`).textContent = pad(s);
+
+    if (lastDays[tr.id] !== undefined && lastDays[tr.id] !== days && MILESTONES.includes(days)) launchConfetti();
+    lastDays[tr.id] = days;
+
+    const next = getNext(days), prev = getPrev(days);
+    const pct = Math.round(((days-prev)/(next-prev))*100);
+    const left = next-days;
+    document.getElementById(`pct-${tr.id}`).textContent = pct+'%';
+    document.getElementById(`gnext-${tr.id}`).innerHTML = `${next} дней <span>— осталось ${left} ${decl(left)}</span>`;
+    document.getElementById(`pfill-${tr.id}`).style.width = pct+'%';
+
+    const msEl = document.getElementById(`ms-${tr.id}`);
+    msEl.innerHTML = '';
+    MILESTONES.forEach(mi => {
+      const dot = document.createElement('div');
+      dot.className = 'milestone-dot'+(mi<next&&days>=mi?' done':mi===next?' current':'');
+      msEl.appendChild(dot);
+    });
+
+    document.getElementById(`saved-${tr.id}`).textContent = fmt(days*tr.spend)+' ₽';
+    document.getElementById(`mo-${tr.id}`).textContent = fmt(tr.spend*30)+' ₽';
+    document.getElementById(`yr-${tr.id}`).textContent = fmt(tr.spend*365)+' ₽';
+  });
+}
+
+// ─── Body panel ───────────────────────────────────────
+let openBodyId = null;
+function toggleBody(id) {
+  const panel = document.getElementById(`body-${id}`);
+  const isOpen = panel.classList.contains('open');
+  document.querySelectorAll('.body-panel').forEach(p => p.classList.remove('open'));
+  if (!isOpen) {
+    panel.classList.add('open');
+    openBodyId = id;
+    const tr = trackers.find(t=>t.id===id);
+    const typeInfo = TRACKER_TYPES[tr.type] || TRACKER_TYPES.custom;
+    const changes = BODY_CHANGES[typeInfo.bodyChanges] || BODY_CHANGES.general;
+    const days = parseInt(document.getElementById(`days-${id}`).textContent)||0;
+    const container = document.getElementById(`body-items-${id}`);
+    container.innerHTML = '';
+    changes.forEach(item => {
+      const d = document.createElement('div');
+      d.className = 'body-item'+(days<item.days?' future':'');
+      d.innerHTML = `<span class="body-item-icon">${item.icon}</span><span class="body-item-text">${item.text}</span>`;
+      container.appendChild(d);
+    });
+  }
+}
+
+// ─── Settings ───────────────────────────────────────
+function openSettings(id) {
+  editingId = id;
+  const tr = trackers.find(t=>t.id===id);
+  document.getElementById('s-date').value = tr.startDate;
+  document.getElementById('s-date').max = new Date().toISOString().split('T')[0];
+  document.getElementById('s-spend').value = tr.spend;
+  selectedBgInSheet = currentBg;
+  document.querySelectorAll('.bg-option').forEach(el => el.classList.toggle('selected', el.dataset.bg === currentBg));
+  document.getElementById('settings-overlay').classList.add('open');
+}
+function closeSettings() {
+  document.getElementById('settings-overlay').classList.remove('open');
+  editingId = null;
+}
+function selectBg(el) {
+  document.querySelectorAll('.bg-option').forEach(e=>e.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedBgInSheet = el.dataset.bg;
+}
+function applySettings() {
+  const date = document.getElementById('s-date').value;
+  const spend = parseInt(document.getElementById('s-spend').value)||0;
+  if (editingId) {
+    const tr = trackers.find(t=>t.id===editingId);
+    tr.startDate = date || tr.startDate;
+    tr.spend = spend;
+    document.getElementById(`since-${editingId}`).textContent = formatDate(tr.startDate);
+  }
+  currentBg = selectedBgInSheet;
+  localStorage.setItem('currentBg', currentBg);
+  applyBg(currentBg);
+  save();
+  closeSettings();
+}
+function confirmReset() {
+  if (confirm('Сбросить счётчик? Это изменит дату начала на сегодня.')) {
+    const tr = trackers.find(t=>t.id===editingId);
+    const today = new Date().toISOString().split('T')[0];
+    tr.startDate = today;
+    document.getElementById(`since-${editingId}`).textContent = formatDate(today);
+    save(); closeSettings();
+  }
+}
+
+// ─── Add tracker ───────────────────────────────────────
+function openAdd() {
+  selectedType = 'alcohol';
+  document.querySelectorAll('.type-option').forEach(el=>el.classList.toggle('selected', el.dataset.type==='alcohol'));
+  document.getElementById('custom-name-wrap').style.display = 'none';
+  document.getElementById('a-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('a-date').max = new Date().toISOString().split('T')[0];
+  document.getElementById('a-spend').value = TRACKER_TYPES.alcohol.spend;
+  document.getElementById('a-name').value = '';
+  document.getElementById('add-overlay').classList.add('open');
+}
+function closeAdd() { document.getElementById('add-overlay').classList.remove('open'); }
+function selectType(el) {
+  document.querySelectorAll('.type-option').forEach(e=>e.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedType = el.dataset.type;
+  document.getElementById('custom-name-wrap').style.display = selectedType==='custom'?'block':'none';
+  document.getElementById('a-spend').value = TRACKER_TYPES[selectedType]?.spend || 0;
+}
+function addTracker() {
+  const date = document.getElementById('a-date').value || new Date().toISOString().split('T')[0];
+  const spend = parseInt(document.getElementById('a-spend').value)||0;
+  let name = TRACKER_TYPES[selectedType]?.label || 'БЕЗ ЗАВИСИМОСТИ.';
+  if (selectedType==='custom') {
+    const custom = document.getElementById('a-name').value.trim();
+    name = custom ? `БЕЗ ${custom.toUpperCase()}.` : 'БЕЗ ЗАВИСИМОСТИ.';
+  }
+  const id = Date.now();
+  trackers.push({ id, type: selectedType, name, startDate: date, spend });
+  currentIdx = trackers.length - 1;
+  save();
+  renderScreens();
+  closeAdd();
+}
+
+// ─── Confetti ───────────────────────────────────────
+const confCanvas = document.getElementById('confetti-canvas');
+const confCtx = confCanvas.getContext('2d');
+let pieces=[], confRunning=false;
+function resizeConf() { confCanvas.width=window.innerWidth; confCanvas.height=window.innerHeight; }
+resizeConf(); window.addEventListener('resize', resizeConf);
+function launchConfetti() {
+  pieces=[];
+  const colors=['#a8e63d','#2dd4bf','#ffffff','#f0f0eb','#ffdd57'];
+  for(let i=0;i<100;i++) pieces.push({
+    x:Math.random()*confCanvas.width, y:-10-Math.random()*80,
+    w:5+Math.random()*7, h:9+Math.random()*5,
+    color:colors[Math.floor(Math.random()*colors.length)],
+    vx:(Math.random()-0.5)*3.5, vy:2+Math.random()*3.5,
+    rot:Math.random()*360, rotV:(Math.random()-0.5)*7,
+  });
+  const flash=document.createElement('div'); flash.className='flash';
+  document.body.appendChild(flash); setTimeout(()=>flash.remove(),600);
+  confRunning=true; animateConf();
+}
+function animateConf() {
+  if(!confRunning) return;
+  confCtx.clearRect(0,0,confCanvas.width,confCanvas.height);
+  let alive=false;
+  pieces.forEach(p=>{
+    p.x+=p.vx; p.y+=p.vy; p.vy+=0.07; p.rot+=p.rotV;
+    if(p.y<confCanvas.height+20) alive=true;
+    confCtx.save(); confCtx.translate(p.x,p.y); confCtx.rotate(p.rot*Math.PI/180);
+    confCtx.fillStyle=p.color; confCtx.fillRect(-p.w/2,-p.h/2,p.w,p.h); confCtx.restore();
+  });
+  if(alive) requestAnimationFrame(animateConf);
+  else { confRunning=false; confCtx.clearRect(0,0,confCanvas.width,confCanvas.height); }
+}
+
+// ─── Persist ───────────────────────────────────────
+function save() { localStorage.setItem('trackers', JSON.stringify(trackers)); }
+
+// ─── Init ───────────────────────────────────────────
+applyBg(currentBg);
+renderScreens();
+tick();
+setInterval(tick, 1000);
+</script>
+</body>
+</html>
